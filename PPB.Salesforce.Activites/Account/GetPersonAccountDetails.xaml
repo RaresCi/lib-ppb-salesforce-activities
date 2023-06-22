@@ -1,0 +1,431 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="GetPersonAccountDetails" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities" xmlns:njl="clr-namespace:Newtonsoft.Json.Linq;assembly=Newtonsoft.Json" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property sap2010:Annotation.AnnotationText="API Key/Token for Salesforce. Please use &quot;Authenticate&quot; Activity to Retrieve this" Name="in_SalesforceAccessToken" Type="InArgument(x:String)">
+      <x:Property.Attributes>
+        <RequiredArgumentAttribute />
+      </x:Property.Attributes>
+    </x:Property>
+    <x:Property sap2010:Annotation.AnnotationText="URL for Salesforce, should be &quot;https://eunew.my.salesforce.com&quot; (as of August 2022). Can be retrieved using &quot;Authenticate&quot; Activity" Name="in_SalesforceInstanceURL" Type="InArgument(x:String)">
+      <x:Property.Attributes>
+        <RequiredArgumentAttribute />
+      </x:Property.Attributes>
+    </x:Property>
+    <x:Property sap2010:Annotation.AnnotationText="Please ensure to include Full Account NK e.g. PP_1234 or BF_1234" Name="in_AccountNK" Type="InArgument(x:String)">
+      <x:Property.Attributes>
+        <RequiredArgumentAttribute />
+      </x:Property.Attributes>
+    </x:Property>
+    <x:Property sap2010:Annotation.AnnotationText="Keys are as follows (as of 04/08/2022):&#xA;&#xA;attributes&#xA;Id&#xA;Person_Account__c&#xA;Person_Account_Group_Account_ID__c&#xA;PP_Account_Manager__c&#xA;BF_Account_Manager__c&#xA;Group_Account_Key__c" Name="out_PersonAccountDetails" Type="OutArgument(scg:Dictionary(x:String, x:String))" />
+  </x:Members>
+  <mva:VisualBasic.Settings>
+    <x:Null />
+  </mva:VisualBasic.Settings>
+  <sap2010:Annotation.AnnotationText>UPTF00000300eyI8SGVscExpbms+a19fQmFja2luZ0ZpZWxkIjpudWxsLCI8SW5pdGlhbFRvb2x0aXA+a19fQmFja2luZ0ZpZWxkIjoiUmV0dXJucyBEZXRhaWxzIG9mIHN1cHBsaWVkIENhc2UgTnVtYmVyIGluIGEgZGljdGlvbmFyeSBvZiBTdHJpbmdzLiBQbGVhc2Ugc2VlIFwib3V0X1BlcnNvbkFjY291bnREZXRhaWxzXCIgQW5ub3RhdGlvbiBmb3IgZnVsbCBsaXN0IG9mIEtleXMuIEFkZGl0aW9uYWxseSwgbG9vcGluZyB0aHJvdWdoIGFuZCBsb2dnaW5nIGVhY2ggS2V5IGNhbiBkaXNwbGF5IGFsbCBLZXkgTmFtZXNcdTAwMGRcdTAwMGFcdTAwMGRcdTAwMGFLZXlzIGFyZSBhcyBmb2xsb3dzIChhcyBvZiAwNFwvMDhcLzIwMjIpOlx1MDAwYVx1MDAwYWF0dHJpYnV0ZXNcdTAwMGFJZFx1MDAwYVBlcnNvbl9BY2NvdW50X19jXHUwMDBkXHUwMDBhUGVyc29uX0FjY291bnRfR3JvdXBfQWNjb3VudF9JRF9fY1x1MDAwYVBQX0FjY291bnRfTWFuYWdlcl9fY1x1MDAwZFx1MDAwYUJGX0FjY291bnRfTWFuYWdlcl9fY1x1MDAwZFx1MDAwYUdyb3VwX0FjY291bnRfS2V5X19jIiwiPFZlcnNpb24+a19fQmFja2luZ0ZpZWxkIjoxfQ==</sap2010:Annotation.AnnotationText>
+  <sap:VirtualizedContainerService.HintSize>1902,5147</sap:VirtualizedContainerService.HintSize>
+  <sap2010:WorkflowViewState.IdRef>GetAccountDetails_1</sap2010:WorkflowViewState.IdRef>
+  <TextExpression.NamespacesForImplementation>
+    <scg:List x:TypeArguments="x:String" Capacity="46">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Activities.Expressions</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.Drawing</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Net.Mail</x:String>
+      <x:String>System.Xml</x:String>
+      <x:String>System.Xml.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>System.Windows.Markup</x:String>
+      <x:String>System.Security</x:String>
+      <x:String>Newtonsoft.Json.Linq</x:String>
+      <x:String>Newtonsoft.Json</x:String>
+    </scg:List>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <scg:List x:TypeArguments="AssemblyReference" Capacity="44">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Drawing</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Xml</AssemblyReference>
+      <AssemblyReference>System.Xml.Linq</AssemblyReference>
+      <AssemblyReference>PresentationFramework</AssemblyReference>
+      <AssemblyReference>WindowsBase</AssemblyReference>
+      <AssemblyReference>PresentationCore</AssemblyReference>
+      <AssemblyReference>System.Xaml</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>System.ValueTuple</AssemblyReference>
+      <AssemblyReference>Microsoft.Bcl.AsyncInterfaces</AssemblyReference>
+      <AssemblyReference>System.Memory</AssemblyReference>
+      <AssemblyReference>System.ServiceModel</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
+      <AssemblyReference>Newtonsoft.Json</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities.Design</AssemblyReference>
+    </scg:List>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence sap2010:Annotation.AnnotationText="Returns Details of supplied Case Number in a dictionary of Strings. Please see &quot;out_PersonAccountDetails&quot; Annotation for full list of Keys. Additionally, looping through and logging each Key can display all Key Names&#xA;&#xA;Keys are as follows (as of 04/08/2022):&#xA;&#xA;attributes&#xA;Id&#xA;Person_Account__c&#xA;Person_Account_Group_Account_ID__c&#xA;PP_Account_Manager__c&#xA;BF_Account_Manager__c&#xA;Group_Account_Key__c" DisplayName="GetPersonAccountDetails" sap:VirtualizedContainerService.HintSize="1882,5087" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="strSQLQuery" />
+      <Variable x:TypeArguments="x:String" Name="strSalesforceQueryPartialEndpoint" />
+      <Variable x:TypeArguments="x:String" Name="strFullEndpoint" />
+      <Variable x:TypeArguments="x:String" Name="strHTTPResult" />
+      <Variable x:TypeArguments="x:Int32" Name="intStatusCode" />
+      <Variable x:TypeArguments="njl:JObject" Name="jObjectSalesforceResult" />
+      <Variable x:TypeArguments="njl:JArray" Name="jArrayResults" />
+      <Variable x:TypeArguments="x:String" Name="strPersonAccountID" />
+      <Variable x:TypeArguments="x:String" Name="strGroupAccountKey" />
+      <Variable x:TypeArguments="scg:List(x:String)" Default="[New List(Of String)]" Name="listKeyNames" />
+      <Variable x:TypeArguments="x:Int32" Default="0" Name="intIndex" />
+    </Sequence.Variables>
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <If sap2010:Annotation.AnnotationText="Throw an Exception if any of the following are empty:&#xA;- Salesforce Access Token&#xA;- Salesforce Instance URL&#xD;&#xA;- Account NK" Condition="[String.IsNullOrEmpty(in_SalesforceAccessToken) Or&#xA;String.IsNullOrEmpty(in_SalesforceInstanceURL) Or &#xA;String.IsNullOrEmpty(in_AccountNK)]" DisplayName="If Access Token/Instance URL/Account NK are empty" sap:VirtualizedContainerService.HintSize="1840,493" sap2010:WorkflowViewState.IdRef="If_2">
+      <sap:WorkflowViewStateService.ViewState>
+        <scg:Dictionary x:TypeArguments="x:String, x:Object">
+          <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+        </scg:Dictionary>
+      </sap:WorkflowViewStateService.ViewState>
+      <If.Then>
+        <Throw DisplayName="Throw Exception (Details Missing)" Exception="[If(String.IsNullOrEmpty(in_SalesforceAccessToken),&#xA;New Exception(&quot;Unable to get Account Details - Access Token is missing&quot;),&#xA;If(String.IsNullOrEmpty(in_SalesforceInstanceURL),&#xA;&#x9;New Exception(&quot;Unable to get Account Details - Instance URL is missing&quot;),&#xA;&#x9;&#x9;New Exception(&quot;Unable to get Account Details - Account NK is missing&quot;)&#xA;&#x9;&#x9;)&#xA;)]" sap:VirtualizedContainerService.HintSize="200,22" sap2010:WorkflowViewState.IdRef="Throw_1" />
+      </If.Then>
+      <If.Else>
+        <If sap2010:Annotation.AnnotationText="Throw an Exception if any of the following occurs:&#xD;&#xA;- Account NK does not contain PP or BF&#xD;&#xA;- Account NK does not contain an underscore" Condition="[(in_AccountNK.tolower.Contains(&quot;pp&quot;) = False And in_AccountNK.toLower.Contains(&quot;bf&quot;) = False) Or&#xA;in_AccountNK.Contains(&quot;_&quot;) = False]" DisplayName="If Account NK format is wrong" sap:VirtualizedContainerService.HintSize="484,269" sap2010:WorkflowViewState.IdRef="If_1">
+          <sap:WorkflowViewStateService.ViewState>
+            <scg:Dictionary x:TypeArguments="x:String, x:Object">
+              <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+              <x:Boolean x:Key="IsPinned">False</x:Boolean>
+              <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+            </scg:Dictionary>
+          </sap:WorkflowViewStateService.ViewState>
+          <If.Then>
+            <Throw DisplayName="Throw Exception (Account NK format is wrong)" Exception="[If(in_AccountNK.tolower.Contains(&quot;pp&quot;) = False And in_AccountNK.toLower.Contains(&quot;bf&quot;) = False And in_AccountNK.Contains(&quot;_&quot;) = False,&#xD;&#xA;New Exception(&quot;Supplied Account NK &quot;+in_AccountNK+&quot; does not contain PP/BF Brand or Underscore&quot;),&#xD;&#xA;If(in_AccountNK.tolower.Contains(&quot;pp&quot;) = False And in_AccountNK.toLower.Contains(&quot;bf&quot;) = False,&#xD;&#xA;&#x9;New Exception(&quot;Supplied Account NK &quot;+in_AccountNK+&quot; does not contain PP or BF Brand&quot;),&#xD;&#xA;&#x9;New Exception(&quot;Supplied Account NK &quot;+in_AccountNK+&quot; does not contain underscore&quot;)&#xD;&#xA;&#x9;)&#xD;&#xA;)]" sap:VirtualizedContainerService.HintSize="200,22" sap2010:WorkflowViewState.IdRef="Throw_2" />
+          </If.Then>
+        </If>
+      </If.Else>
+    </If>
+    <ui:MultipleAssign sap2010:Annotation.AnnotationText="Salesforce Query Endpoint structured as follows&#xA;&#xA;- Salesforce Instance URL&#xA;- Query String&#xA;- SQL Query&#xA;&#xA;e.g. &#xA;- https://eunew.my.salesforce.com&#xA;- /services/data/v42.0/query?q=&#xA;- Select Id, Person_Account__c,Person_Account_Group_Account_ID__c, PP_Account_Manager__c, BF_Account_Manager__c From  Account Where  Betting_Account_ID__c='{AccountNK}' LIMIT  100&#xA;&#xA;Full:&#xA;https://eunew.my.salesforce.com/services/data/v42.0/query?q=Select Id, Person_Account__c,Person_Account_Group_Account_ID__c, PP_Account_Manager__c, BF_Account_Manager__c From  Account Where  Betting_Account_ID__c='{AccountNK}' LIMIT  100" DisplayName="Multiple Assign - Prepare Endpoint (Person Account)" sap:VirtualizedContainerService.HintSize="1840,533" sap2010:WorkflowViewState.IdRef="MultipleAssign_1">
+      <ui:MultipleAssign.AssignOperations>
+        <scg:List x:TypeArguments="ui:AssignOperation" Capacity="4">
+          <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_1">
+            <ui:AssignOperation.To>
+              <OutArgument x:TypeArguments="x:String">[strSQLQuery]</OutArgument>
+            </ui:AssignOperation.To>
+            <ui:AssignOperation.Value>
+              <InArgument x:TypeArguments="x:String" xml:space="preserve">Select Id, Person_Account__c,Person_Account_Group_Account_ID__c, PP_Account_Manager__c, BF_Account_Manager__c From  Account Where  Betting_Account_ID__c='{AccountNK}' LIMIT  100</InArgument>
+            </ui:AssignOperation.Value>
+          </ui:AssignOperation>
+          <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_2">
+            <ui:AssignOperation.To>
+              <OutArgument x:TypeArguments="x:String">[strSQLQuery]</OutArgument>
+            </ui:AssignOperation.To>
+            <ui:AssignOperation.Value>
+              <InArgument x:TypeArguments="x:String">[strSQLQuery.Replace("{AccountNK}", in_AccountNK)]</InArgument>
+            </ui:AssignOperation.Value>
+          </ui:AssignOperation>
+          <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_3">
+            <ui:AssignOperation.To>
+              <OutArgument x:TypeArguments="x:String">[strSalesforceQueryPartialEndpoint]</OutArgument>
+            </ui:AssignOperation.To>
+            <ui:AssignOperation.Value>
+              <InArgument x:TypeArguments="x:String">/services/data/v42.0/query?q=</InArgument>
+            </ui:AssignOperation.Value>
+          </ui:AssignOperation>
+          <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_4">
+            <ui:AssignOperation.To>
+              <OutArgument x:TypeArguments="x:String">[strFullEndpoint]</OutArgument>
+            </ui:AssignOperation.To>
+            <ui:AssignOperation.Value>
+              <InArgument x:TypeArguments="x:String">[in_SalesforceInstanceURL+strSalesforceQueryPartialEndpoint+strSQLQuery]</InArgument>
+            </ui:AssignOperation.Value>
+          </ui:AssignOperation>
+        </scg:List>
+      </ui:MultipleAssign.AssignOperations>
+      <sap:WorkflowViewStateService.ViewState>
+        <scg:Dictionary x:TypeArguments="x:String, x:Object">
+          <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+        </scg:Dictionary>
+      </sap:WorkflowViewStateService.ViewState>
+    </ui:MultipleAssign>
+    <ui:HttpClient Body="{x:Null}" ConsumerKey="{x:Null}" ConsumerSecret="{x:Null}" ContinueOnError="{x:Null}" OAuth1Token="{x:Null}" OAuth1TokenSecret="{x:Null}" OAuth2Token="{x:Null}" Password="{x:Null}" ResourcePath="{x:Null}" ResponseHeaders="{x:Null}" SecureClientCertificatePassword="{x:Null}" SecurePassword="{x:Null}" Username="{x:Null}" AcceptFormat="JSON" BodyFormat="application/xml" ClientCertificate="[Nothing]" ClientCertificatePassword="[Nothing]" DisplayName="HTTP Request - Get Person ID (Salesforce)" EndPoint="[strFullEndpoint]" sap:VirtualizedContainerService.HintSize="1840,22" sap2010:WorkflowViewState.IdRef="HttpClient_1" Method="GET" Result="[strHTTPResult]" StatusCode="[intStatusCode]" TimeoutMS="6000">
+      <ui:HttpClient.Attachments>
+        <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+      </ui:HttpClient.Attachments>
+      <ui:HttpClient.Cookies>
+        <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+      </ui:HttpClient.Cookies>
+      <ui:HttpClient.Headers>
+        <InArgument x:TypeArguments="x:String" x:Key="Authorization">["Bearer "+in_SalesforceAccessToken]</InArgument>
+      </ui:HttpClient.Headers>
+      <ui:HttpClient.Parameters>
+        <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+      </ui:HttpClient.Parameters>
+      <ui:HttpClient.UrlSegments>
+        <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+      </ui:HttpClient.UrlSegments>
+    </ui:HttpClient>
+    <ui:DeserializeJson x:TypeArguments="njl:JObject" DisplayName="Deserialize JSON - Person Account" sap:VirtualizedContainerService.HintSize="1840,60" sap2010:WorkflowViewState.IdRef="DeserializeJson`1_1" JsonObject="[jObjectSalesforceResult]" JsonString="[strHTTPResult]" />
+    <If Condition="[intStatusCode.Equals(200)= False]" DisplayName="If intStatusCode.Equals(200)= False" sap:VirtualizedContainerService.HintSize="1840,3727" sap2010:WorkflowViewState.IdRef="If_8">
+      <If.Then>
+        <Throw DisplayName="Throw Exception (Person Account)" Exception="[If(intStatusCode.Equals(0), New Exception(&quot;Unable to get Person Account ID. Status Code: &quot;+intStatusCode.ToString+&quot;, Response: &quot;+jObjectSalesforceResult(&quot;error&quot;).ToString+&quot;, No Response Returned&quot;), New Exception(&quot;Unable to get Person Account ID. Status Code: &quot;+intStatusCode.ToString+&quot;, Full Response: &quot;+strHTTPResult))]" sap:VirtualizedContainerService.HintSize="200,22" sap2010:WorkflowViewState.IdRef="Throw_3" />
+      </If.Then>
+      <If.Else>
+        <Sequence DisplayName="Sequence - intStatusCode.Equals(200)" sap:VirtualizedContainerService.HintSize="1595,3579" sap2010:WorkflowViewState.IdRef="Sequence_9">
+          <sap:WorkflowViewStateService.ViewState>
+            <scg:Dictionary x:TypeArguments="x:String, x:Object">
+              <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            </scg:Dictionary>
+          </sap:WorkflowViewStateService.ViewState>
+          <ui:DeserializeJsonArray DisplayName="Deserialize JSON Array - Person Account" sap:VirtualizedContainerService.HintSize="1553,60" sap2010:WorkflowViewState.IdRef="DeserializeJsonArray_1" JsonArray="[jArrayResults]" JsonString="[jObjectSalesforceResult(&quot;records&quot;).ToString]" />
+          <If Condition="[jArrayResults.Count &lt;= 0]" DisplayName="If jArrayResults.Count &lt;= 0" sap:VirtualizedContainerService.HintSize="1553,3387" sap2010:WorkflowViewState.IdRef="If_7">
+            <If.Then>
+              <Sequence DisplayName="Sequence - Unable to Find Person Account ID" sap:VirtualizedContainerService.HintSize="376,183" sap2010:WorkflowViewState.IdRef="Sequence_2">
+                <sap:WorkflowViewStateService.ViewState>
+                  <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                    <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                  </scg:Dictionary>
+                </sap:WorkflowViewStateService.ViewState>
+                <ui:LogMessage DisplayName="Log Message - Datatable is Empty (Person Account" sap:VirtualizedContainerService.HintSize="334,91" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Warn" Message="[&quot;Status Code: &quot;+intStatusCode.ToString+&quot;. Unable to retrieve Person Account ID for &quot;+in_AccountNK+&quot;. Account Table appears to be Empty&quot;]" />
+              </Sequence>
+            </If.Then>
+            <If.Else>
+              <Sequence DisplayName="Sequence - jArrayResults.Count &gt; 0" sap:VirtualizedContainerService.HintSize="1132,3239" sap2010:WorkflowViewState.IdRef="Sequence_8">
+                <sap:WorkflowViewStateService.ViewState>
+                  <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                    <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                  </scg:Dictionary>
+                </sap:WorkflowViewStateService.ViewState>
+                <ui:Comment sap:VirtualizedContainerService.HintSize="1090,74" sap2010:WorkflowViewState.IdRef="Comment_2" Text="// Here, we are getting the Keys of the JObject" />
+                <ui:ForEach x:TypeArguments="njl:JObject" CurrentIndex="{x:Null}" DisplayName="For Each item in jArrayResults" sap:VirtualizedContainerService.HintSize="1090,520" sap2010:WorkflowViewState.IdRef="ForEach`1_4" Values="[jArrayResults]">
+                  <ui:ForEach.Body>
+                    <ActivityAction x:TypeArguments="njl:JObject">
+                      <ActivityAction.Argument>
+                        <DelegateInArgument x:TypeArguments="njl:JObject" Name="sfcase" />
+                      </ActivityAction.Argument>
+                      <Sequence sap:VirtualizedContainerService.HintSize="349,386" sap2010:WorkflowViewState.IdRef="Sequence_11">
+                        <sap:WorkflowViewStateService.ViewState>
+                          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                          </scg:Dictionary>
+                        </sap:WorkflowViewStateService.ViewState>
+                        <Assign DisplayName="Assign strPersonAccountID" sap:VirtualizedContainerService.HintSize="307,60" sap2010:WorkflowViewState.IdRef="Assign_15">
+                          <Assign.To>
+                            <OutArgument x:TypeArguments="x:String">[strPersonAccountID]</OutArgument>
+                          </Assign.To>
+                          <Assign.Value>
+                            <InArgument x:TypeArguments="x:String">[sfcase("Person_Account__c").ToString]</InArgument>
+                          </Assign.Value>
+                        </Assign>
+                        <ui:ForEach x:TypeArguments="njl:JProperty" CurrentIndex="{x:Null}" DisplayName="For Each prop in sfcase.Properties" sap:VirtualizedContainerService.HintSize="307,194" sap2010:WorkflowViewState.IdRef="ForEach`1_3" Values="[sfcase.Properties]">
+                          <ui:ForEach.Body>
+                            <ActivityAction x:TypeArguments="njl:JProperty">
+                              <ActivityAction.Argument>
+                                <DelegateInArgument x:TypeArguments="njl:JProperty" Name="prop" />
+                              </ActivityAction.Argument>
+                              <AddToCollection x:TypeArguments="x:String" Collection="[listKeyNames]" DisplayName="Add To Collection - listKeyNames" sap:VirtualizedContainerService.HintSize="200,22" sap2010:WorkflowViewState.IdRef="AddToCollection`1_1" Item="[prop.Name]" />
+                            </ActivityAction>
+                          </ui:ForEach.Body>
+                        </ui:ForEach>
+                      </Sequence>
+                    </ActivityAction>
+                  </ui:ForEach.Body>
+                </ui:ForEach>
+                <ui:Comment sap:VirtualizedContainerService.HintSize="1090,93" sap2010:WorkflowViewState.IdRef="Comment_3" Text="// Here, we are adding the Keys and their values as a Key Value Pair in the Output Dictionary" />
+                <Assign DisplayName="Assign out_PersonAccountDetails (Initialize)" sap:VirtualizedContainerService.HintSize="1090,60" sap2010:WorkflowViewState.IdRef="Assign_13">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[out_PersonAccountDetails]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[new Dictionary(Of String, String)]</InArgument>
+                  </Assign.Value>
+                </Assign>
+                <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each key1 in listKeyNames" sap:VirtualizedContainerService.HintSize="1090,390" sap2010:WorkflowViewState.IdRef="ForEach`1_5" Values="[listKeyNames]">
+                  <ui:ForEach.Body>
+                    <ActivityAction x:TypeArguments="x:String">
+                      <ActivityAction.Argument>
+                        <DelegateInArgument x:TypeArguments="x:String" Name="key1" />
+                      </ActivityAction.Argument>
+                      <Sequence DisplayName="Sequence - For Each key1 in listKeyNames" sap:VirtualizedContainerService.HintSize="304,256" sap2010:WorkflowViewState.IdRef="Sequence_10">
+                        <sap:WorkflowViewStateService.ViewState>
+                          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                          </scg:Dictionary>
+                        </sap:WorkflowViewStateService.ViewState>
+                        <Assign DisplayName="Assign out_PersonAccountDetails (Add to Dictionary)" sap:VirtualizedContainerService.HintSize="262,64" sap2010:WorkflowViewState.IdRef="Assign_11">
+                          <Assign.To>
+                            <OutArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[out_PersonAccountDetails]</OutArgument>
+                          </Assign.To>
+                          <Assign.Value>
+                            <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" xml:space="preserve">[out_PersonAccountDetails.Union(
+New Dictionary(Of String, String) From {
+{listKeyNames(intIndex), jArrayResults(0)(listKeyNames(intIndex)).ToString}
+}
+).ToDictionary(Function (k) k.Key, Function(v) v.Value)]</InArgument>
+                          </Assign.Value>
+                        </Assign>
+                        <Assign DisplayName="Assign intIndex" sap:VirtualizedContainerService.HintSize="262,60" sap2010:WorkflowViewState.IdRef="Assign_12">
+                          <Assign.To>
+                            <OutArgument x:TypeArguments="x:Int32">[intIndex]</OutArgument>
+                          </Assign.To>
+                          <Assign.Value>
+                            <InArgument x:TypeArguments="x:Int32">[intIndex+1]</InArgument>
+                          </Assign.Value>
+                        </Assign>
+                      </Sequence>
+                    </ActivityAction>
+                  </ui:ForEach.Body>
+                </ui:ForEach>
+                <ui:Comment sap:VirtualizedContainerService.HintSize="1090,55" sap2010:WorkflowViewState.IdRef="Comment_1" Text="// Group Account Key" />
+                <ui:MultipleAssign sap2010:Annotation.AnnotationText="Salesforce Query Endpoint structured as follows&#xA;&#xA;- Salesforce Instance URL&#xA;- Query String&#xA;- SQL Query&#xA;&#xA;e.g. &#xA;- https://eunew.my.salesforce.com&#xA;- /services/data/v42.0/query?q=&#xA;- select Group_Account_Key__c from Account where id = '{PersonAccountID}'&#xA;&#xA;Full:&#xA;https://eunew.my.salesforce.com/services/data/v42.0/query?q=select Group_Account_Key__c from Account where id = '{PersonAccountID}'" DisplayName="Multiple Assign - Prepare Endpoint (Group Account ID)" sap:VirtualizedContainerService.HintSize="1090,412" sap2010:WorkflowViewState.IdRef="MultipleAssign_2">
+                  <ui:MultipleAssign.AssignOperations>
+                    <scg:List x:TypeArguments="ui:AssignOperation" Capacity="4">
+                      <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_5">
+                        <ui:AssignOperation.To>
+                          <OutArgument x:TypeArguments="x:String">[strSQLQuery]</OutArgument>
+                        </ui:AssignOperation.To>
+                        <ui:AssignOperation.Value>
+                          <InArgument x:TypeArguments="x:String">select Group_Account_Key__c from Account where id = '{PersonAccountID}'</InArgument>
+                        </ui:AssignOperation.Value>
+                      </ui:AssignOperation>
+                      <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_6">
+                        <ui:AssignOperation.To>
+                          <OutArgument x:TypeArguments="x:String">[strSQLQuery]</OutArgument>
+                        </ui:AssignOperation.To>
+                        <ui:AssignOperation.Value>
+                          <InArgument x:TypeArguments="x:String">[strSQLQuery.Replace("{PersonAccountID}", strPersonAccountID)]</InArgument>
+                        </ui:AssignOperation.Value>
+                      </ui:AssignOperation>
+                      <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_8">
+                        <ui:AssignOperation.To>
+                          <OutArgument x:TypeArguments="x:String">[strFullEndpoint]</OutArgument>
+                        </ui:AssignOperation.To>
+                        <ui:AssignOperation.Value>
+                          <InArgument x:TypeArguments="x:String">[in_SalesforceInstanceURL+strSalesforceQueryPartialEndpoint+strSQLQuery]</InArgument>
+                        </ui:AssignOperation.Value>
+                      </ui:AssignOperation>
+                    </scg:List>
+                  </ui:MultipleAssign.AssignOperations>
+                  <sap:WorkflowViewStateService.ViewState>
+                    <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                      <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+                    </scg:Dictionary>
+                  </sap:WorkflowViewStateService.ViewState>
+                </ui:MultipleAssign>
+                <ui:HttpClient Body="{x:Null}" ConsumerKey="{x:Null}" ConsumerSecret="{x:Null}" ContinueOnError="{x:Null}" OAuth1Token="{x:Null}" OAuth1TokenSecret="{x:Null}" OAuth2Token="{x:Null}" Password="{x:Null}" ResourcePath="{x:Null}" ResponseHeaders="{x:Null}" SecureClientCertificatePassword="{x:Null}" SecurePassword="{x:Null}" Username="{x:Null}" AcceptFormat="JSON" BodyFormat="application/xml" ClientCertificate="[Nothing]" ClientCertificatePassword="[Nothing]" DisplayName="HTTP Request - Get Group Account Key (Salesforce)" EndPoint="[strFullEndpoint]" sap:VirtualizedContainerService.HintSize="1090,22" sap2010:WorkflowViewState.IdRef="HttpClient_2" Method="GET" Result="[strHTTPResult]" StatusCode="[intStatusCode]" TimeoutMS="6000">
+                  <ui:HttpClient.Attachments>
+                    <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+                  </ui:HttpClient.Attachments>
+                  <ui:HttpClient.Cookies>
+                    <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+                  </ui:HttpClient.Cookies>
+                  <ui:HttpClient.Headers>
+                    <InArgument x:TypeArguments="x:String" x:Key="Authorization">["Bearer "+in_SalesforceAccessToken]</InArgument>
+                  </ui:HttpClient.Headers>
+                  <ui:HttpClient.Parameters>
+                    <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+                  </ui:HttpClient.Parameters>
+                  <ui:HttpClient.UrlSegments>
+                    <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+                  </ui:HttpClient.UrlSegments>
+                </ui:HttpClient>
+                <ui:DeserializeJson x:TypeArguments="njl:JObject" DisplayName="Deserialize JSON - Group Account Key" sap:VirtualizedContainerService.HintSize="1090,60" sap2010:WorkflowViewState.IdRef="DeserializeJson`1_2" JsonObject="[jObjectSalesforceResult]" JsonString="[strHTTPResult]" />
+                <If Condition="[intStatusCode.Equals(200)= False]" DisplayName="If intStatusCode.Equals(200)= False" sap:VirtualizedContainerService.HintSize="1090,1101" sap2010:WorkflowViewState.IdRef="If_6">
+                  <If.Then>
+                    <Throw DisplayName="Throw Exception (Group Account Key)" Exception="[If (intStatusCode.Equals(0), New Exception(&quot;Unable to get Group Account Key. Status Code: &quot;+intStatusCode.ToString+&quot;, No Response returned&quot;), New Exception(&quot;Unable to get Group Account Key. Status Code: &quot;+intStatusCode.ToString+&quot;, Full Response: &quot;+strHTTPResult))]" sap:VirtualizedContainerService.HintSize="200,22" sap2010:WorkflowViewState.IdRef="Throw_4" />
+                  </If.Then>
+                  <If.Else>
+                    <Sequence DisplayName="Sequence - intStatusCode.Equals(200)" sap:VirtualizedContainerService.HintSize="845,953" sap2010:WorkflowViewState.IdRef="Sequence_7">
+                      <sap:WorkflowViewStateService.ViewState>
+                        <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                          <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                        </scg:Dictionary>
+                      </sap:WorkflowViewStateService.ViewState>
+                      <ui:DeserializeJsonArray DisplayName="Deserialize JSON Array - Group Account Key" sap:VirtualizedContainerService.HintSize="803,60" sap2010:WorkflowViewState.IdRef="DeserializeJsonArray_2" JsonArray="[jArrayResults]" JsonString="[jObjectSalesforceResult(&quot;records&quot;).ToString]" />
+                      <If Condition="[jArrayResults.Count &lt;= 0]" DisplayName="If jArrayResults.Count &lt;= 0" sap:VirtualizedContainerService.HintSize="803,761" sap2010:WorkflowViewState.IdRef="If_5">
+                        <If.Then>
+                          <Sequence DisplayName="Sequence - Unable to Find Group Account Key" sap:VirtualizedContainerService.HintSize="376,183" sap2010:WorkflowViewState.IdRef="Sequence_4">
+                            <sap:WorkflowViewStateService.ViewState>
+                              <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                                <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                              </scg:Dictionary>
+                            </sap:WorkflowViewStateService.ViewState>
+                            <ui:LogMessage DisplayName="Log Message - Datatable is Empty (Group Account Key)" sap:VirtualizedContainerService.HintSize="334,91" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Warn" Message="[&quot;Unable to retrieve Group Account Key for &quot;+in_AccountNK+&quot;. Account Table for Person Account ID &quot;+strPersonAccountID+&quot; appears to be Empty&quot;]" />
+                          </Sequence>
+                        </If.Then>
+                        <If.Else>
+                          <Sequence DisplayName="Sequence - jArrayResults.Count &gt; 0" sap:VirtualizedContainerService.HintSize="382,613" sap2010:WorkflowViewState.IdRef="Sequence_6">
+                            <sap:WorkflowViewStateService.ViewState>
+                              <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                                <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                              </scg:Dictionary>
+                            </sap:WorkflowViewStateService.ViewState>
+                            <ui:ForEach x:TypeArguments="njl:JObject" CurrentIndex="{x:Null}" DisplayName="For Each item in jArrayResults" sap:VirtualizedContainerService.HintSize="340,286" sap2010:WorkflowViewState.IdRef="ForEach`1_2" Values="[jArrayResults]">
+                              <ui:ForEach.Body>
+                                <ActivityAction x:TypeArguments="njl:JObject">
+                                  <ActivityAction.Argument>
+                                    <DelegateInArgument x:TypeArguments="njl:JObject" Name="item" />
+                                  </ActivityAction.Argument>
+                                  <Sequence DisplayName="Body - For Each item in jArrayResults" sap:VirtualizedContainerService.HintSize="304,152" sap2010:WorkflowViewState.IdRef="Sequence_5">
+                                    <sap:WorkflowViewStateService.ViewState>
+                                      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                                        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                                      </scg:Dictionary>
+                                    </sap:WorkflowViewStateService.ViewState>
+                                    <Assign DisplayName="Assign strGroupAccountKey" sap:VirtualizedContainerService.HintSize="262,60" sap2010:WorkflowViewState.IdRef="Assign_10">
+                                      <Assign.To>
+                                        <OutArgument x:TypeArguments="x:String">[strGroupAccountKey]</OutArgument>
+                                      </Assign.To>
+                                      <Assign.Value>
+                                        <InArgument x:TypeArguments="x:String">[item("Group_Account_Key__c").ToString]</InArgument>
+                                      </Assign.Value>
+                                    </Assign>
+                                  </Sequence>
+                                </ActivityAction>
+                              </ui:ForEach.Body>
+                            </ui:ForEach>
+                            <Assign DisplayName="Assign out_PersonAccountDetails (Add Group Account Key)" sap:VirtualizedContainerService.HintSize="340,64" sap2010:WorkflowViewState.IdRef="Assign_14">
+                              <Assign.To>
+                                <OutArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[out_PersonAccountDetails]</OutArgument>
+                              </Assign.To>
+                              <Assign.Value>
+                                <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" xml:space="preserve">[out_PersonAccountDetails.Union(
+New Dictionary(Of String, String) From {
+{"Group_Account_Key__c", strGroupAccountKey}
+}
+).ToDictionary(Function (k) k.Key, Function(v) v.Value)]</InArgument>
+                              </Assign.Value>
+                            </Assign>
+                            <ui:LogMessage DisplayName="Log Message - Person Account Details Retrieved" sap:VirtualizedContainerService.HintSize="340,91" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Info" Message="[&quot;Person Account Details retrieved - Status Code: &quot;+intStatusCode.ToString+&quot;, Person Account ID: &quot;+out_PersonAccountDetails(&quot;Person_Account__c&quot;).ToString]" />
+                          </Sequence>
+                        </If.Else>
+                      </If>
+                    </Sequence>
+                  </If.Else>
+                </If>
+              </Sequence>
+            </If.Else>
+          </If>
+        </Sequence>
+      </If.Else>
+    </If>
+  </Sequence>
+</Activity>
