@@ -1,0 +1,605 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="GetReportHitsByAccount" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities" xmlns:njl="clr-namespace:Newtonsoft.Json.Linq;assembly=Newtonsoft.Json" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib" xmlns:sd="clr-namespace:System.Data;assembly=System.Data" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property sap2010:Annotation.AnnotationText="API Key/Token for Salesforce. Please use &quot;Authenticate&quot; Activity to Retrieve this" Name="in_SalesforceAccessToken" Type="InArgument(x:String)">
+      <x:Property.Attributes>
+        <RequiredArgumentAttribute />
+      </x:Property.Attributes>
+    </x:Property>
+    <x:Property sap2010:Annotation.AnnotationText="URL for Salesforce, should be &quot;https://eunew.my.salesforce.com&quot; (as of August 2022). Can be retrieved using &quot;Authenticate&quot; Activity" Name="in_SalesforceInstanceURL" Type="InArgument(x:String)">
+      <x:Property.Attributes>
+        <RequiredArgumentAttribute />
+      </x:Property.Attributes>
+    </x:Property>
+    <x:Property sap2010:Annotation.AnnotationText="The Customers Salesforce Account ID. Can be retrieved from CaseDetails, GetCasesFromQueueID or GetPersonAccountDetails Activities" Name="in_AccountIDSalesforce" Type="InArgument(x:String)" />
+    <x:Property sap2010:Annotation.AnnotationText="You can use this to retrieve Report Hits if you cannot find the Salesforce Account ID. Please ensure to include Full Account NK e.g. PP_1234 or BF_1234" Name="in_AccountNK" Type="InArgument(x:String)" />
+    <x:Property sap2010:Annotation.AnnotationText="Integer - Total Report Hits for Account in the last 7 Days" Name="out_TotalReportHits7Days" Type="OutArgument(x:Int32)" />
+    <x:Property sap2010:Annotation.AnnotationText="Integer - Total Report Hits for Account in the last 30 Days" Name="out_TotalReportHits30Days" Type="OutArgument(x:Int32)" />
+    <x:Property sap2010:Annotation.AnnotationText="Integer - Total Report Hits for Account in the last 365 Days" Name="out_TotalReportHits365Days" Type="OutArgument(x:Int32)" />
+    <x:Property sap2010:Annotation.AnnotationText="Integer - Total Report Hits for Account since its Creation" Name="out_TotalReportHitsLifetime" Type="OutArgument(x:Int32)" />
+    <x:Property sap2010:Annotation.AnnotationText="Column Names are as follow:&#xA;&#xA;ReportHitName&#xA;ReportHitType&#xA;ReportHitID&#xA;ReportHitDate&#xA;CreatedDate&#xA;OwnerID&#xA;CreatedByID&#xA;Action&#xA;BettingAccountID&#xA;Brand&#xA;CountryOfResidence&#xA;ExternalRecordID&#xA;PersonAccountID&#xA;Priority&#xA;TriggerHit&#xA;Stake&#xA;ValueTier&#xA;P&amp;L&#xA;SessionMinutes&#xA;BetCount&#xA;Withdrawal&#xA;DailyDeposit&#xA;Deposit&#xA;PercentageIncrease&#xA;Losses&#xA;RiskScore" Name="out_ReportHits" Type="OutArgument(sd:DataTable)" />
+    <x:Property sap2010:Annotation.AnnotationText="Optional String - Use this if you would like to get figures for a Specific Report Hit Type (e.g. &quot;Time Onsite&quot;, &quot;BF Deposit Spike&quot;)" Name="in_ReportHitType" Type="InArgument(x:String)" />
+  </x:Members>
+  <mva:VisualBasic.Settings>
+    <x:Null />
+  </mva:VisualBasic.Settings>
+  <sap2010:Annotation.AnnotationText>UPTF00000440eyI8SGVscExpbms+a19fQmFja2luZ0ZpZWxkIjpudWxsLCI8SW5pdGlhbFRvb2x0aXA+a19fQmFja2luZ0ZpZWxkIjoiUmV0dXJucyBEYXRhdGFibGUgb2YgUmVwb3QgSGl0cyBmb3IgYSBnaXZlbiBBY2NvdW50IE5LIE9SIFNhbGVzZm9yY2UgQWNjb3VudCBJRFx1MDAwYVx1MDAwYUNvbHVtbnMgYXJlIGFzIGZvbGxvd3MgKGFzIG9mIDA1XC8wOFwvMjAyMik6XHUwMDBhUmVwb3J0SGl0TmFtZVx1MDAwZFx1MDAwYVJlcG9ydEhpdFR5cGVcdTAwMGRcdTAwMGFSZXBvcnRIaXRJRFx1MDAwZFx1MDAwYVJlcG9ydEhpdERhdGVcdTAwMGRcdTAwMGFDcmVhdGVkRGF0ZVx1MDAwZFx1MDAwYU93bmVySURcdTAwMGRcdTAwMGFDcmVhdGVkQnlJRFx1MDAwZFx1MDAwYUFjdGlvblx1MDAwZFx1MDAwYUJldHRpbmdBY2NvdW50SURcdTAwMGRcdTAwMGFCcmFuZFx1MDAwZFx1MDAwYUNvdW50cnlPZlJlc2lkZW5jZVx1MDAwZFx1MDAwYUV4dGVybmFsUmVjb3JkSURcdTAwMGRcdTAwMGFQZXJzb25BY2NvdW50SURcdTAwMGRcdTAwMGFQcmlvcml0eVx1MDAwZFx1MDAwYVRyaWdnZXJIaXRcdTAwMGRcdTAwMGFTdGFrZVx1MDAwZFx1MDAwYVZhbHVlVGllclx1MDAwZFx1MDAwYVAmTFx1MDAwZFx1MDAwYVNlc3Npb25NaW51dGVzXHUwMDBkXHUwMDBhQmV0Q291bnRcdTAwMGRcdTAwMGFXaXRoZHJhd2FsXHUwMDBkXHUwMDBhRGFpbHlEZXBvc2l0XHUwMDBkXHUwMDBhRGVwb3NpdFx1MDAwZFx1MDAwYVBlcmNlbnRhZ2VJbmNyZWFzZVx1MDAwZFx1MDAwYUxvc3Nlc1x1MDAwZFx1MDAwYVJpc2tTY29yZSIsIjxWZXJzaW9uPmtfX0JhY2tpbmdGaWVsZCI6MX0=</sap2010:Annotation.AnnotationText>
+  <sap:VirtualizedContainerService.HintSize>1645,6736</sap:VirtualizedContainerService.HintSize>
+  <sap2010:WorkflowViewState.IdRef>GetReportHitsByAccountID_1</sap2010:WorkflowViewState.IdRef>
+  <TextExpression.NamespacesForImplementation>
+    <scg:List x:TypeArguments="x:String" Capacity="48">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Activities.Expressions</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.Drawing</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Net.Mail</x:String>
+      <x:String>System.Xml</x:String>
+      <x:String>System.Xml.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>System.Windows.Markup</x:String>
+      <x:String>System.Security</x:String>
+      <x:String>Newtonsoft.Json.Linq</x:String>
+      <x:String>Newtonsoft.Json</x:String>
+      <x:String>System.Xml.Serialization</x:String>
+    </scg:List>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <scg:List x:TypeArguments="AssemblyReference" Capacity="23">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Drawing</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Xml</AssemblyReference>
+      <AssemblyReference>System.Xml.Linq</AssemblyReference>
+      <AssemblyReference>PresentationFramework</AssemblyReference>
+      <AssemblyReference>WindowsBase</AssemblyReference>
+      <AssemblyReference>PresentationCore</AssemblyReference>
+      <AssemblyReference>System.Xaml</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>System.ValueTuple</AssemblyReference>
+      <AssemblyReference>Microsoft.Bcl.AsyncInterfaces</AssemblyReference>
+      <AssemblyReference>System.Memory</AssemblyReference>
+      <AssemblyReference>System.ServiceModel</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
+      <AssemblyReference>Newtonsoft.Json</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities.Design</AssemblyReference>
+    </scg:List>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence sap2010:Annotation.AnnotationText="Returns Datatable of Repot Hits for a given Account NK OR Salesforce Account ID&#xA;&#xA;Columns are as follows (as of 05/08/2022):&#xA;ReportHitName&#xA;ReportHitType&#xA;ReportHitID&#xA;ReportHitDate&#xA;CreatedDate&#xA;OwnerID&#xA;CreatedByID&#xA;Action&#xA;BettingAccountID&#xA;Brand&#xA;CountryOfResidence&#xA;ExternalRecordID&#xA;PersonAccountID&#xA;Priority&#xA;TriggerHit&#xA;Stake&#xA;ValueTier&#xA;P&amp;L&#xA;SessionMinutes&#xA;BetCount&#xA;Withdrawal&#xA;DailyDeposit&#xA;Deposit&#xA;PercentageIncrease&#xA;Losses&#xA;RiskScore" DisplayName="GetReportHitsByAccount" sap:VirtualizedContainerService.HintSize="1625,6676" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="strSQLQuery" />
+      <Variable x:TypeArguments="x:String" Name="strSalesforceQueryPartialEndpoint" />
+      <Variable x:TypeArguments="x:String" Name="strFullEndpoint" />
+      <Variable x:TypeArguments="x:String" Name="strHTTPResult" />
+      <Variable x:TypeArguments="x:Int32" Name="intStatusCode" />
+      <Variable x:TypeArguments="njl:JObject" Name="jObjectSalesforceResult" />
+      <Variable x:TypeArguments="njl:JArray" Name="jArrayResults" />
+      <Variable x:TypeArguments="x:String" Name="strYearReportHit" />
+      <Variable x:TypeArguments="x:String" Name="strMonthReportHit" />
+      <Variable x:TypeArguments="x:String" Name="strDayReportHit" />
+      <Variable x:TypeArguments="x:String" Name="strDateOfReportHit" />
+      <Variable x:TypeArguments="sd:DataTable" Default="[New Datatable]" Name="dtReportHits" />
+      <Variable x:TypeArguments="scg:List(x:String)" Default="[New List(Of String)]" Name="variable1" />
+    </Sequence.Variables>
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <If sap2010:Annotation.AnnotationText="Throw an Exception if any of the following are empty:&#xA;- Salesforce Access Token&#xA;- Salesforce Instance URL" Condition="[String.IsNullOrEmpty(in_SalesforceAccessToken) Or&#xA;String.IsNullOrEmpty(in_SalesforceInstanceURL)]" DisplayName="If Access Token/Instance URL are empty" sap:VirtualizedContainerService.HintSize="1583,474" sap2010:WorkflowViewState.IdRef="If_1">
+      <sap:WorkflowViewStateService.ViewState>
+        <scg:Dictionary x:TypeArguments="x:String, x:Object">
+          <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+        </scg:Dictionary>
+      </sap:WorkflowViewStateService.ViewState>
+      <If.Then>
+        <Throw DisplayName="Throw Exception (Auth Details Missing)" Exception="[If(String.IsNullOrEmpty(in_SalesforceAccessToken),&#xA;New Exception(&quot;Unable to get Report Hits - Access Token is missing&quot;),&#xA;New Exception(&quot;Unable to get Report Hits - Instance URL is missing&quot;)&#xA;)]" sap:VirtualizedContainerService.HintSize="200,22" sap2010:WorkflowViewState.IdRef="Throw_1" />
+      </If.Then>
+      <If.Else>
+        <If sap2010:Annotation.AnnotationText="Throw an Exception if both of the following are empty:&#xA;- Account ID&#xA;- Account NK" Condition="[String.IsNullOrEmpty(in_AccountIDSalesforce) And String.IsNullOrEmpty(in_AccountNK)]" DisplayName="If Account ID AND Account NK are empty" sap:VirtualizedContainerService.HintSize="484,265" sap2010:WorkflowViewState.IdRef="If_2">
+          <sap:WorkflowViewStateService.ViewState>
+            <scg:Dictionary x:TypeArguments="x:String, x:Object">
+              <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+            </scg:Dictionary>
+          </sap:WorkflowViewStateService.ViewState>
+          <If.Then>
+            <Throw DisplayName="Throw Exception (Account Details Missing)" Exception="[New Exception(&quot;Unable to get Report Hits - Account ID AND Account NK are Missing. Please supply one&quot;)]" sap:VirtualizedContainerService.HintSize="200,22" sap2010:WorkflowViewState.IdRef="Throw_2" />
+          </If.Then>
+        </If>
+      </If.Else>
+    </If>
+    <ui:BuildDataTable sap2010:Annotation.AnnotationText="Columns are as follows:&#xA;&#xA;ReportHitName&#xA;ReportHitType&#xA;ReportHitID&#xA;ReportHitDate&#xA;CreatedDate&#xA;OwnerID&#xA;CreatedByID&#xA;Action&#xA;BettingAccountID&#xA;Brand&#xA;CountryOfResidence&#xA;ExternalRecordID&#xA;PersonAccountID&#xA;Priority&#xA;TriggerHit&#xA;Stake&#xA;ValueTier&#xA;P&amp;L&#xA;SessionMinutes&#xA;BetCount&#xA;Withdrawal&#xA;DailyDeposit&#xA;Deposit&#xA;PercentageIncrease&#xA;Losses&#xA;RiskScore" DataTable="[dtReportHits]" DisplayName="Build Data Table - dtReportHits" sap:VirtualizedContainerService.HintSize="1583,491" sap2010:WorkflowViewState.IdRef="BuildDataTable_1" TableInfo="&lt;NewDataSet&gt;&#xA;  &lt;xs:schema id=&quot;NewDataSet&quot; xmlns=&quot;&quot; xmlns:xs=&quot;http://www.w3.org/2001/XMLSchema&quot; xmlns:msdata=&quot;urn:schemas-microsoft-com:xml-msdata&quot;&gt;&#xA;    &lt;xs:element name=&quot;NewDataSet&quot; msdata:IsDataSet=&quot;true&quot; msdata:MainDataTable=&quot;TableName&quot; msdata:UseCurrentLocale=&quot;true&quot;&gt;&#xA;      &lt;xs:complexType&gt;&#xA;        &lt;xs:choice minOccurs=&quot;0&quot; maxOccurs=&quot;unbounded&quot;&gt;&#xA;          &lt;xs:element name=&quot;TableName&quot;&gt;&#xA;            &lt;xs:complexType&gt;&#xA;              &lt;xs:sequence&gt;&#xA;                &lt;xs:element name=&quot;ReportHitName&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;ReportHitType&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;ReportHitId&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;ReportHitDate&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;CreatedDate&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;OwnerID&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;CreatedByID&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;Action&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;BettingAccountID&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;Brand&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;CountryOfResidence&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;ExternalRecordID&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;PersonAccountID&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;Priority&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;TriggerHit&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;Stake&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;ValueTier&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;P_x0026_L&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;SessionMinutes&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;BetCount&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;Withdrawal&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;DailyDeposit&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;Deposit&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;PercentageIncrease&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;Losses&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;RiskScore&quot; msdata:Caption=&quot;&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;              &lt;/xs:sequence&gt;&#xA;            &lt;/xs:complexType&gt;&#xA;          &lt;/xs:element&gt;&#xA;        &lt;/xs:choice&gt;&#xA;      &lt;/xs:complexType&gt;&#xA;    &lt;/xs:element&gt;&#xA;  &lt;/xs:schema&gt;&#xA;&lt;/NewDataSet&gt;">
+      <sap:WorkflowViewStateService.ViewState>
+        <scg:Dictionary x:TypeArguments="x:String, x:Object">
+          <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+        </scg:Dictionary>
+      </sap:WorkflowViewStateService.ViewState>
+    </ui:BuildDataTable>
+    <If Condition="[String.IsNullOrEmpty(in_AccountIDSalesforce)]" DisplayName="If String.IsNullOrEmpty(in_AccountIDSalesforce)" sap:VirtualizedContainerService.HintSize="1583,2077" sap2010:WorkflowViewState.IdRef="If_3">
+      <If.Then>
+        <Sequence DisplayName="Sequence - String.IsNullOrEmpty(in_AccountIDSalesforce)" sap:VirtualizedContainerService.HintSize="1028,1929" sap2010:WorkflowViewState.IdRef="Sequence_2">
+          <sap:WorkflowViewStateService.ViewState>
+            <scg:Dictionary x:TypeArguments="x:String, x:Object">
+              <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            </scg:Dictionary>
+          </sap:WorkflowViewStateService.ViewState>
+          <ui:Comment sap:VirtualizedContainerService.HintSize="986,93" sap2010:WorkflowViewState.IdRef="Comment_1" Text="// Here the Account NK was provided so we need to make an API Call to get the Salesforce Account ID" />
+          <ui:MultipleAssign sap2010:Annotation.AnnotationText="Salesforce Query Endpoint structured as follows&#xA;&#xA;- Salesforce Instance URL&#xA;- Query String&#xA;- SQL Query&#xA;&#xA;e.g. &#xA;- https://eunew.my.salesforce.com&#xA;- /services/data/v42.0/query?q=&#xA;- Select Id From Account Where  Betting_Account_ID__c='{AccountNK}' LIMIT  1&#xA;&#xA;Full:&#xA;https://eunew.my.salesforce.com/services/data/v42.0/query?q=Select Id From Account Where  Betting_Account_ID__c='{AccountNK}' LIMIT  1" DisplayName="Multiple Assign - Prepare Endpoint (Account)" sap:VirtualizedContainerService.HintSize="986,443" sap2010:WorkflowViewState.IdRef="MultipleAssign_1">
+            <ui:MultipleAssign.AssignOperations>
+              <scg:List x:TypeArguments="ui:AssignOperation" Capacity="4">
+                <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_1">
+                  <ui:AssignOperation.To>
+                    <OutArgument x:TypeArguments="x:String">[strSQLQuery]</OutArgument>
+                  </ui:AssignOperation.To>
+                  <ui:AssignOperation.Value>
+                    <InArgument x:TypeArguments="x:String" xml:space="preserve">Select Id From Account Where  Betting_Account_ID__c='{AccountNK}' LIMIT  1</InArgument>
+                  </ui:AssignOperation.Value>
+                </ui:AssignOperation>
+                <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_2">
+                  <ui:AssignOperation.To>
+                    <OutArgument x:TypeArguments="x:String">[strSQLQuery]</OutArgument>
+                  </ui:AssignOperation.To>
+                  <ui:AssignOperation.Value>
+                    <InArgument x:TypeArguments="x:String">[strSQLQuery.Replace("{AccountNK}", in_AccountNK)]</InArgument>
+                  </ui:AssignOperation.Value>
+                </ui:AssignOperation>
+                <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_3">
+                  <ui:AssignOperation.To>
+                    <OutArgument x:TypeArguments="x:String">[strSalesforceQueryPartialEndpoint]</OutArgument>
+                  </ui:AssignOperation.To>
+                  <ui:AssignOperation.Value>
+                    <InArgument x:TypeArguments="x:String">/services/data/v42.0/query?q=</InArgument>
+                  </ui:AssignOperation.Value>
+                </ui:AssignOperation>
+                <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_4">
+                  <ui:AssignOperation.To>
+                    <OutArgument x:TypeArguments="x:String">[strFullEndpoint]</OutArgument>
+                  </ui:AssignOperation.To>
+                  <ui:AssignOperation.Value>
+                    <InArgument x:TypeArguments="x:String">[in_SalesforceInstanceURL+strSalesforceQueryPartialEndpoint+strSQLQuery]</InArgument>
+                  </ui:AssignOperation.Value>
+                </ui:AssignOperation>
+              </scg:List>
+            </ui:MultipleAssign.AssignOperations>
+            <sap:WorkflowViewStateService.ViewState>
+              <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+              </scg:Dictionary>
+            </sap:WorkflowViewStateService.ViewState>
+          </ui:MultipleAssign>
+          <ui:HttpClient Body="{x:Null}" ConsumerKey="{x:Null}" ConsumerSecret="{x:Null}" ContinueOnError="{x:Null}" OAuth1Token="{x:Null}" OAuth1TokenSecret="{x:Null}" OAuth2Token="{x:Null}" Password="{x:Null}" ResourcePath="{x:Null}" ResponseHeaders="{x:Null}" SecureClientCertificatePassword="{x:Null}" SecurePassword="{x:Null}" Username="{x:Null}" AcceptFormat="JSON" BodyFormat="application/xml" ClientCertificate="[Nothing]" ClientCertificatePassword="[Nothing]" DisplayName="HTTP Request - Account" EndPoint="[strFullEndpoint]" sap:VirtualizedContainerService.HintSize="986,22" sap2010:WorkflowViewState.IdRef="HttpClient_1" Method="GET" Result="[strHTTPResult]" StatusCode="[intStatusCode]" TimeoutMS="30000">
+            <ui:HttpClient.Attachments>
+              <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+            </ui:HttpClient.Attachments>
+            <ui:HttpClient.Cookies>
+              <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+            </ui:HttpClient.Cookies>
+            <ui:HttpClient.Headers>
+              <InArgument x:TypeArguments="x:String" x:Key="Authorization">["Bearer "+in_SalesforceAccessToken]</InArgument>
+            </ui:HttpClient.Headers>
+            <ui:HttpClient.Parameters>
+              <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+            </ui:HttpClient.Parameters>
+            <ui:HttpClient.UrlSegments>
+              <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+            </ui:HttpClient.UrlSegments>
+          </ui:HttpClient>
+          <ui:DeserializeJson x:TypeArguments="njl:JObject" DisplayName="Deserialize JSON -  Account" sap:VirtualizedContainerService.HintSize="986,60" sap2010:WorkflowViewState.IdRef="DeserializeJson`1_1" JsonObject="[jObjectSalesforceResult]" JsonString="[strHTTPResult]" />
+          <If Condition="[intStatusCode.Equals(200)= False]" DisplayName="If intStatusCode.Equals(200)= False" sap:VirtualizedContainerService.HintSize="986,1059" sap2010:WorkflowViewState.IdRef="If_6">
+            <If.Then>
+              <Throw DisplayName="Throw Exception (Account)" Exception="[If(intStatusCode.Equals(0), &#xD;&#xA;New Exception(&quot;Unable to get Account ID. Status Code: &quot;+intStatusCode.ToString+&quot;, No Response Returned&quot;), &#xD;&#xA;New Exception(&quot;Unable to get Account ID. Status Code: &quot;+intStatusCode.ToString+&quot;, Full Response: &quot;+strHTTPResult))]" sap:VirtualizedContainerService.HintSize="200,22" sap2010:WorkflowViewState.IdRef="Throw_3" />
+            </If.Then>
+            <If.Else>
+              <Sequence DisplayName="Sequence - intStatusCode.Equals(200)" sap:VirtualizedContainerService.HintSize="741,911" sap2010:WorkflowViewState.IdRef="Sequence_7">
+                <sap:WorkflowViewStateService.ViewState>
+                  <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                    <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                  </scg:Dictionary>
+                </sap:WorkflowViewStateService.ViewState>
+                <ui:DeserializeJsonArray DisplayName="Deserialize JSON Array - Account" sap:VirtualizedContainerService.HintSize="699,60" sap2010:WorkflowViewState.IdRef="DeserializeJsonArray_1" JsonArray="[jArrayResults]" JsonString="[jObjectSalesforceResult(&quot;records&quot;).ToString]" />
+                <If Condition="[jArrayResults.Count &lt;= 0]" DisplayName="If jArrayResults.Count &lt;= 0 (Account)" sap:VirtualizedContainerService.HintSize="699,719" sap2010:WorkflowViewState.IdRef="If_5">
+                  <If.Then>
+                    <Throw DisplayName="Throw Business Exception (Unable to Find Account)" Exception="[New BusinessRuleException(&quot;Status Code: &quot;+intStatusCode.ToString+&quot;. Unable to retrieve Account ID for &quot;+in_AccountNK+&quot;. Account Table appears to be Empty. Response: &quot;+strHTTPResult)]" sap:VirtualizedContainerService.HintSize="200,22" sap2010:WorkflowViewState.IdRef="Throw_5" />
+                  </If.Then>
+                  <If.Else>
+                    <Sequence DisplayName="Sequence - jArrayResults.Count &gt; 0 (Account)" sap:VirtualizedContainerService.HintSize="454,571" sap2010:WorkflowViewState.IdRef="Sequence_6">
+                      <sap:WorkflowViewStateService.ViewState>
+                        <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                          <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                        </scg:Dictionary>
+                      </sap:WorkflowViewStateService.ViewState>
+                      <ui:ForEach x:TypeArguments="njl:JObject" CurrentIndex="{x:Null}" DisplayName="For Each item in jArrayResults (Account)" sap:VirtualizedContainerService.HintSize="412,479" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[jArrayResults]">
+                        <ui:ForEach.Body>
+                          <ActivityAction x:TypeArguments="njl:JObject">
+                            <ActivityAction.Argument>
+                              <DelegateInArgument x:TypeArguments="njl:JObject" Name="acc" />
+                            </ActivityAction.Argument>
+                            <Sequence DisplayName="Sequence - For Each item in jArrayResults (Account)" sap:VirtualizedContainerService.HintSize="376,345" sap2010:WorkflowViewState.IdRef="Sequence_8">
+                              <sap:WorkflowViewStateService.ViewState>
+                                <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                                  <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                                </scg:Dictionary>
+                              </sap:WorkflowViewStateService.ViewState>
+                              <Assign DisplayName="Assign in_AccountIDSalesforce" sap:VirtualizedContainerService.HintSize="334,60" sap2010:WorkflowViewState.IdRef="Assign_3">
+                                <Assign.To>
+                                  <OutArgument x:TypeArguments="x:String">[in_AccountIDSalesforce]</OutArgument>
+                                </Assign.To>
+                                <Assign.Value>
+                                  <InArgument x:TypeArguments="x:String">[acc("Id").ToString]</InArgument>
+                                </Assign.Value>
+                              </Assign>
+                              <ui:LogMessage DisplayName="Log Message - Salesforce Account ID Found" sap:VirtualizedContainerService.HintSize="334,91" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Status Code: &quot;+intStatusCode.ToString+&quot;, Salesforce Account ID for &quot;+in_AccountNK+&quot; located: &quot;+in_AccountIDSalesforce]" />
+                              <ui:Break sap:VirtualizedContainerService.HintSize="334,22" sap2010:WorkflowViewState.IdRef="Break_1" />
+                            </Sequence>
+                          </ActivityAction>
+                        </ui:ForEach.Body>
+                      </ui:ForEach>
+                    </Sequence>
+                  </If.Else>
+                </If>
+              </Sequence>
+            </If.Else>
+          </If>
+        </Sequence>
+      </If.Then>
+      <If.Else>
+        <ui:Comment sap:VirtualizedContainerService.HintSize="334,93" sap2010:WorkflowViewState.IdRef="Comment_2" Text="// Here the Salesforce Account ID has been provided so we can look for the Accounts Report Hits" />
+      </If.Else>
+    </If>
+    <ui:MultipleAssign DisplayName="Multiple Assign - Initialize Ints (Out Args)" sap:VirtualizedContainerService.HintSize="1583,191" sap2010:WorkflowViewState.IdRef="MultipleAssign_8">
+      <ui:MultipleAssign.AssignOperations>
+        <scg:List x:TypeArguments="ui:AssignOperation" Capacity="8">
+          <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_33">
+            <ui:AssignOperation.To>
+              <OutArgument x:TypeArguments="x:Int32">[out_TotalReportHits7Days]</OutArgument>
+            </ui:AssignOperation.To>
+            <ui:AssignOperation.Value>
+              <InArgument x:TypeArguments="x:Int32">0</InArgument>
+            </ui:AssignOperation.Value>
+          </ui:AssignOperation>
+          <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_34">
+            <ui:AssignOperation.To>
+              <OutArgument x:TypeArguments="x:Int32">[out_TotalReportHits30Days]</OutArgument>
+            </ui:AssignOperation.To>
+            <ui:AssignOperation.Value>
+              <InArgument x:TypeArguments="x:Int32">0</InArgument>
+            </ui:AssignOperation.Value>
+          </ui:AssignOperation>
+          <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_35">
+            <ui:AssignOperation.To>
+              <OutArgument x:TypeArguments="x:Int32">[out_TotalReportHits365Days]</OutArgument>
+            </ui:AssignOperation.To>
+            <ui:AssignOperation.Value>
+              <InArgument x:TypeArguments="x:Int32">0</InArgument>
+            </ui:AssignOperation.Value>
+          </ui:AssignOperation>
+          <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_36">
+            <ui:AssignOperation.To>
+              <OutArgument x:TypeArguments="x:Int32">[out_TotalReportHitsLifetime]</OutArgument>
+            </ui:AssignOperation.To>
+            <ui:AssignOperation.Value>
+              <InArgument x:TypeArguments="x:Int32">0</InArgument>
+            </ui:AssignOperation.Value>
+          </ui:AssignOperation>
+        </scg:List>
+      </ui:MultipleAssign.AssignOperations>
+    </ui:MultipleAssign>
+    <If Condition="[String.IsNullOrEmpty(in_ReportHitType)]" DisplayName="If String.IsNullOrEmpty(in_ReportHitType)" sap:VirtualizedContainerService.HintSize="1583,921" sap2010:WorkflowViewState.IdRef="If_13">
+      <If.Then>
+        <ui:MultipleAssign sap2010:Annotation.AnnotationText="Salesforce Query Endpoint structured as follows&#xA;&#xA;- Salesforce Instance URL&#xA;- Query String&#xA;- SQL Query&#xA;&#xA;e.g. &#xA;- https://eunew.my.salesforce.com&#xA;- /services/data/v42.0/query?q=&#xA;- select Name, Report_Hit__c, Id, Date_of_Report_hit__c, CreatedDate, OwnerId, CreatedById, Action__c, Betting_Account__c, Brand__c, Country_of_Residence__c, External_Record_ID__c, Person_Account__c, Priority__c, Trigger_Hit__c, Stake__c, Value_Tier__c, p_l__c, Session_Minutes__c, Bet_Count__c, Withdrawal__c, Daily_Deposit__c, Deposit__c, Percentage_Increase__c, Losses__c, Risk_Score__c from Report_Hit__c where Betting_Account__c = '{AccountID}' order by Date_of_Report_hit__c desc, CreatedDate asc&#xA;&#xA;&#xA;Full:&#xA;https://eunew.my.salesforce.com/services/data/v42.0/query?q=select Name, Report_Hit__c, Id, Date_of_Report_hit__c, CreatedDate, OwnerId, CreatedById, Action__c, Betting_Account__c, Brand__c, Country_of_Residence__c, External_Record_ID__c, Person_Account__c, Priority__c, Trigger_Hit__c, Stake__c, Value_Tier__c, p_l__c, Session_Minutes__c, Bet_Count__c, Withdrawal__c, Daily_Deposit__c, Deposit__c, Percentage_Increase__c, Losses__c, Risk_Score__c from Report_Hit__c where Betting_Account__c = '{AccountID}' order by Date_of_Report_hit__c desc, CreatedDate asc&#xA;" DisplayName="Multiple Assign - Prepare Endpoint (Report Hits - Account)" sap:VirtualizedContainerService.HintSize="334,743" sap2010:WorkflowViewState.IdRef="MultipleAssign_2">
+          <ui:MultipleAssign.AssignOperations>
+            <scg:List x:TypeArguments="ui:AssignOperation" Capacity="4">
+              <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_5">
+                <ui:AssignOperation.To>
+                  <OutArgument x:TypeArguments="x:String">[strSQLQuery]</OutArgument>
+                </ui:AssignOperation.To>
+                <ui:AssignOperation.Value>
+                  <InArgument x:TypeArguments="x:String">select Name, Report_Hit__c, Id, Date_of_Report_hit__c, CreatedDate, OwnerId, CreatedById, Action__c, Betting_Account__c, Brand__c, Country_of_Residence__c, External_Record_ID__c, Person_Account__c, Priority__c, Trigger_Hit__c, Stake__c, Value_Tier__c, p_l__c, Session_Minutes__c, Bet_Count__c, Withdrawal__c, Daily_Deposit__c, Deposit__c, Percentage_Increase__c, Losses__c, Risk_Score__c from Report_Hit__c where Betting_Account__c = '{AccountID}' order by Date_of_Report_hit__c desc, CreatedDate asc</InArgument>
+                </ui:AssignOperation.Value>
+              </ui:AssignOperation>
+              <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_6">
+                <ui:AssignOperation.To>
+                  <OutArgument x:TypeArguments="x:String">[strSQLQuery]</OutArgument>
+                </ui:AssignOperation.To>
+                <ui:AssignOperation.Value>
+                  <InArgument x:TypeArguments="x:String">[strSQLQuery.Replace("{AccountID}", in_AccountIDSalesforce)]</InArgument>
+                </ui:AssignOperation.Value>
+              </ui:AssignOperation>
+              <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_7">
+                <ui:AssignOperation.To>
+                  <OutArgument x:TypeArguments="x:String">[strSalesforceQueryPartialEndpoint]</OutArgument>
+                </ui:AssignOperation.To>
+                <ui:AssignOperation.Value>
+                  <InArgument x:TypeArguments="x:String">/services/data/v42.0/query?q=</InArgument>
+                </ui:AssignOperation.Value>
+              </ui:AssignOperation>
+              <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_8">
+                <ui:AssignOperation.To>
+                  <OutArgument x:TypeArguments="x:String">[strFullEndpoint]</OutArgument>
+                </ui:AssignOperation.To>
+                <ui:AssignOperation.Value>
+                  <InArgument x:TypeArguments="x:String">[in_SalesforceInstanceURL+strSalesforceQueryPartialEndpoint+strSQLQuery]</InArgument>
+                </ui:AssignOperation.Value>
+              </ui:AssignOperation>
+            </scg:List>
+          </ui:MultipleAssign.AssignOperations>
+          <sap:WorkflowViewStateService.ViewState>
+            <scg:Dictionary x:TypeArguments="x:String, x:Object">
+              <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+            </scg:Dictionary>
+          </sap:WorkflowViewStateService.ViewState>
+        </ui:MultipleAssign>
+      </If.Then>
+      <If.Else>
+        <ui:MultipleAssign sap2010:Annotation.AnnotationText="Salesforce Query Endpoint structured as follows&#xA;&#xA;- Salesforce Instance URL&#xA;- Query String&#xA;- SQL Query&#xA;&#xA;e.g. &#xA;- https://eunew.my.salesforce.com&#xA;- /services/data/v42.0/query?q=&#xA;- select Name, Report_Hit__c, Id, Date_of_Report_hit__c, CreatedDate, OwnerId, CreatedById, Action__c, Betting_Account__c, Brand__c, Country_of_Residence__c, External_Record_ID__c, Person_Account__c, Priority__c, Trigger_Hit__c, Stake__c, Value_Tier__c, p_l__c, Session_Minutes__c, Bet_Count__c, Withdrawal__c, Daily_Deposit__c, Deposit__c, Percentage_Increase__c, Losses__c, Risk_Score__c from Report_Hit__c where Betting_Account__c = '{AccountID}' and Report_Hit__c = '{ReportHitType}' order by Date_of_Report_hit__c desc, CreatedDate asc&#xA;&#xA;&#xA;Full:&#xA;https://eunew.my.salesforce.com/services/data/v42.0/query?q=select Name, Report_Hit__c, Id, Date_of_Report_hit__c, CreatedDate, OwnerId, CreatedById, Action__c, Betting_Account__c, Brand__c, Country_of_Residence__c, External_Record_ID__c, Person_Account__c, Priority__c, Trigger_Hit__c, Stake__c, Value_Tier__c, p_l__c, Session_Minutes__c, Bet_Count__c, Withdrawal__c, Daily_Deposit__c, Deposit__c, Percentage_Increase__c, Losses__c, Risk_Score__c from Report_Hit__c where Betting_Account__c = '{AccountID}' and Report_Hit__c = '{ReportHitType}' order by Date_of_Report_hit__c desc, CreatedDate asc&#xA;" DisplayName="Multiple Assign - Prepare Endpoint (Report Hits - Account/ReportHitType)" sap:VirtualizedContainerService.HintSize="334,773" sap2010:WorkflowViewState.IdRef="MultipleAssign_10">
+          <ui:MultipleAssign.AssignOperations>
+            <scg:List x:TypeArguments="ui:AssignOperation" Capacity="4">
+              <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_38">
+                <ui:AssignOperation.To>
+                  <OutArgument x:TypeArguments="x:String">[strSQLQuery]</OutArgument>
+                </ui:AssignOperation.To>
+                <ui:AssignOperation.Value>
+                  <InArgument x:TypeArguments="x:String">select Name, Report_Hit__c, Id, Date_of_Report_hit__c, CreatedDate, OwnerId, CreatedById, Action__c, Betting_Account__c, Brand__c, Country_of_Residence__c, External_Record_ID__c, Person_Account__c, Priority__c, Trigger_Hit__c, Stake__c, Value_Tier__c, p_l__c, Session_Minutes__c, Bet_Count__c, Withdrawal__c, Daily_Deposit__c, Deposit__c, Percentage_Increase__c, Losses__c, Risk_Score__c from Report_Hit__c where Betting_Account__c = '{AccountID}' and Report_Hit__c = '{ReportHitType}' order by Date_of_Report_hit__c desc, CreatedDate asc</InArgument>
+                </ui:AssignOperation.Value>
+              </ui:AssignOperation>
+              <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_39">
+                <ui:AssignOperation.To>
+                  <OutArgument x:TypeArguments="x:String">[strSQLQuery]</OutArgument>
+                </ui:AssignOperation.To>
+                <ui:AssignOperation.Value>
+                  <InArgument x:TypeArguments="x:String">[strSQLQuery.Replace("{AccountID}", in_AccountIDSalesforce).Replace("{ReportHitType}", in_ReportHitType)]</InArgument>
+                </ui:AssignOperation.Value>
+              </ui:AssignOperation>
+              <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_40">
+                <ui:AssignOperation.To>
+                  <OutArgument x:TypeArguments="x:String">[strSalesforceQueryPartialEndpoint]</OutArgument>
+                </ui:AssignOperation.To>
+                <ui:AssignOperation.Value>
+                  <InArgument x:TypeArguments="x:String">/services/data/v42.0/query?q=</InArgument>
+                </ui:AssignOperation.Value>
+              </ui:AssignOperation>
+              <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_41">
+                <ui:AssignOperation.To>
+                  <OutArgument x:TypeArguments="x:String">[strFullEndpoint]</OutArgument>
+                </ui:AssignOperation.To>
+                <ui:AssignOperation.Value>
+                  <InArgument x:TypeArguments="x:String">[in_SalesforceInstanceURL+strSalesforceQueryPartialEndpoint+strSQLQuery]</InArgument>
+                </ui:AssignOperation.Value>
+              </ui:AssignOperation>
+            </scg:List>
+          </ui:MultipleAssign.AssignOperations>
+          <sap:WorkflowViewStateService.ViewState>
+            <scg:Dictionary x:TypeArguments="x:String, x:Object">
+              <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+            </scg:Dictionary>
+          </sap:WorkflowViewStateService.ViewState>
+        </ui:MultipleAssign>
+      </If.Else>
+    </If>
+    <ui:HttpClient Body="{x:Null}" ConsumerKey="{x:Null}" ConsumerSecret="{x:Null}" ContinueOnError="{x:Null}" OAuth1Token="{x:Null}" OAuth1TokenSecret="{x:Null}" OAuth2Token="{x:Null}" Password="{x:Null}" ResourcePath="{x:Null}" ResponseHeaders="{x:Null}" SecureClientCertificatePassword="{x:Null}" SecurePassword="{x:Null}" Username="{x:Null}" AcceptFormat="JSON" BodyFormat="application/xml" ClientCertificate="[Nothing]" ClientCertificatePassword="[Nothing]" DisplayName="HTTP Request - Report Hits" EndPoint="[strFullEndpoint]" sap:VirtualizedContainerService.HintSize="1583,22" sap2010:WorkflowViewState.IdRef="HttpClient_2" Method="GET" Result="[strHTTPResult]" StatusCode="[intStatusCode]" TimeoutMS="30000">
+      <ui:HttpClient.Attachments>
+        <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+      </ui:HttpClient.Attachments>
+      <ui:HttpClient.Cookies>
+        <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+      </ui:HttpClient.Cookies>
+      <ui:HttpClient.Headers>
+        <InArgument x:TypeArguments="x:String" x:Key="Authorization">["Bearer "+in_SalesforceAccessToken]</InArgument>
+      </ui:HttpClient.Headers>
+      <ui:HttpClient.Parameters>
+        <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+      </ui:HttpClient.Parameters>
+      <ui:HttpClient.UrlSegments>
+        <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
+      </ui:HttpClient.UrlSegments>
+    </ui:HttpClient>
+    <ui:DeserializeJson x:TypeArguments="njl:JObject" DisplayName="Deserialize JSON -  Report Hits" sap:VirtualizedContainerService.HintSize="1583,60" sap2010:WorkflowViewState.IdRef="DeserializeJson`1_2" JsonObject="[jObjectSalesforceResult]" JsonString="[strHTTPResult]" />
+    <If Condition="[intStatusCode.Equals(200)= False]" DisplayName="If intStatusCode.Equals(200)= False" sap:VirtualizedContainerService.HintSize="1583,1799" sap2010:WorkflowViewState.IdRef="If_12">
+      <If.Then>
+        <Throw DisplayName="Throw Exception (Report Hits)" Exception="[If(intStatusCode.Equals(0), &#xA;&#x9;New Exception(&quot;Unable to get Report Hits for &quot;+in_AccountIDSalesforce+&quot;. Status Code: &quot;+intStatusCode.ToString+&quot;, Response: &quot;+jObjectSalesforceResult(&quot;error&quot;).ToString+&quot;, No Response Returned&quot;), &#xA;&#x9;New Exception(&quot;Unable to get Report Hits for &quot;+in_AccountIDSalesforce+&quot;. Status Code: &quot;+intStatusCode.ToString+&quot;, Full Response: &quot;+strHTTPResult)&#xA;)]" sap:VirtualizedContainerService.HintSize="200,22" sap2010:WorkflowViewState.IdRef="Throw_6" />
+      </If.Then>
+      <If.Else>
+        <Sequence DisplayName="Sequence - intStatusCode.Equals(200)" sap:VirtualizedContainerService.HintSize="1338,1651" sap2010:WorkflowViewState.IdRef="Sequence_16">
+          <sap:WorkflowViewStateService.ViewState>
+            <scg:Dictionary x:TypeArguments="x:String, x:Object">
+              <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            </scg:Dictionary>
+          </sap:WorkflowViewStateService.ViewState>
+          <ui:DeserializeJsonArray DisplayName="Deserialize JSON Array - Report Hits" sap:VirtualizedContainerService.HintSize="1296,60" sap2010:WorkflowViewState.IdRef="DeserializeJsonArray_2" JsonArray="[jArrayResults]" JsonString="[jObjectSalesforceResult(&quot;records&quot;).ToString]" />
+          <If Condition="[jArrayResults.Count &lt;= 0]" DisplayName="If jArrayResults.Count &lt;= 0 (Report Hits)" sap:VirtualizedContainerService.HintSize="1296,1459" sap2010:WorkflowViewState.IdRef="If_11">
+            <If.Then>
+              <Sequence DisplayName="Sequence - No Report Hits" sap:VirtualizedContainerService.HintSize="376,283" sap2010:WorkflowViewState.IdRef="Sequence_9">
+                <sap:WorkflowViewStateService.ViewState>
+                  <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                    <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                  </scg:Dictionary>
+                </sap:WorkflowViewStateService.ViewState>
+                <ui:MultipleAssign DisplayName="Multiple Assign - Report Hits Empty" sap:VirtualizedContainerService.HintSize="334,191" sap2010:WorkflowViewState.IdRef="MultipleAssign_3">
+                  <ui:MultipleAssign.AssignOperations>
+                    <scg:List x:TypeArguments="ui:AssignOperation" Capacity="8">
+                      <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_9">
+                        <ui:AssignOperation.To>
+                          <OutArgument x:TypeArguments="x:Int32">[out_TotalReportHits7Days]</OutArgument>
+                        </ui:AssignOperation.To>
+                        <ui:AssignOperation.Value>
+                          <InArgument x:TypeArguments="x:Int32">0</InArgument>
+                        </ui:AssignOperation.Value>
+                      </ui:AssignOperation>
+                      <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_10">
+                        <ui:AssignOperation.To>
+                          <OutArgument x:TypeArguments="x:Int32">[out_TotalReportHits30Days]</OutArgument>
+                        </ui:AssignOperation.To>
+                        <ui:AssignOperation.Value>
+                          <InArgument x:TypeArguments="x:Int32">0</InArgument>
+                        </ui:AssignOperation.Value>
+                      </ui:AssignOperation>
+                      <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_11">
+                        <ui:AssignOperation.To>
+                          <OutArgument x:TypeArguments="x:Int32">[out_TotalReportHits365Days]</OutArgument>
+                        </ui:AssignOperation.To>
+                        <ui:AssignOperation.Value>
+                          <InArgument x:TypeArguments="x:Int32">0</InArgument>
+                        </ui:AssignOperation.Value>
+                      </ui:AssignOperation>
+                      <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_12">
+                        <ui:AssignOperation.To>
+                          <OutArgument x:TypeArguments="x:Int32">[out_TotalReportHitsLifetime]</OutArgument>
+                        </ui:AssignOperation.To>
+                        <ui:AssignOperation.Value>
+                          <InArgument x:TypeArguments="x:Int32">0</InArgument>
+                        </ui:AssignOperation.Value>
+                      </ui:AssignOperation>
+                    </scg:List>
+                  </ui:MultipleAssign.AssignOperations>
+                </ui:MultipleAssign>
+              </Sequence>
+            </If.Then>
+            <If.Else>
+              <Sequence DisplayName="Sequence - jArrayResults.Count &gt; 0 (Report Hits)" sap:VirtualizedContainerService.HintSize="875,1311" sap2010:WorkflowViewState.IdRef="Sequence_15">
+                <sap:WorkflowViewStateService.ViewState>
+                  <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                    <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                  </scg:Dictionary>
+                </sap:WorkflowViewStateService.ViewState>
+                <ui:ForEach x:TypeArguments="njl:JObject" CurrentIndex="{x:Null}" DisplayName="For Each item in jArrayResults (Report Hits)" sap:VirtualizedContainerService.HintSize="833,1219" sap2010:WorkflowViewState.IdRef="ForEach`1_3" Values="[jArrayResults]">
+                  <ui:ForEach.Body>
+                    <ActivityAction x:TypeArguments="njl:JObject">
+                      <ActivityAction.Argument>
+                        <DelegateInArgument x:TypeArguments="njl:JObject" Name="item" />
+                      </ActivityAction.Argument>
+                      <Sequence DisplayName="Body - For Each item in jArrayResults (Report Hits)" sap:VirtualizedContainerService.HintSize="797,1085" sap2010:WorkflowViewState.IdRef="Sequence_14">
+                        <sap:WorkflowViewStateService.ViewState>
+                          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                          </scg:Dictionary>
+                        </sap:WorkflowViewStateService.ViewState>
+                        <If sap2010:Annotation.AnnotationText="This field is sometimes empty to adding a Check to be sure" Condition="[String.IsNullOrEmpty(item(&quot;Date_of_Report_hit__c&quot;).ToString)]" DisplayName="If Date of Report Hit is Empty" sap:VirtualizedContainerService.HintSize="755,499" sap2010:WorkflowViewState.IdRef="If_10">
+                          <sap:WorkflowViewStateService.ViewState>
+                            <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                              <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+                            </scg:Dictionary>
+                          </sap:WorkflowViewStateService.ViewState>
+                          <If.Then>
+                            <Sequence DisplayName="Sequence - Date of Report Hit is Empty" sap:VirtualizedContainerService.HintSize="376,283" sap2010:WorkflowViewState.IdRef="Sequence_13">
+                              <sap:WorkflowViewStateService.ViewState>
+                                <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                                  <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+                                </scg:Dictionary>
+                              </sap:WorkflowViewStateService.ViewState>
+                              <ui:LogMessage DisplayName="Log Message - Date of Report Hit is Blank" sap:VirtualizedContainerService.HintSize="334,91" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Warn" Message="[&quot;Salesforce_API_GetReportHitDetails: Date of Report Hit Name &quot;+item(&quot;Report_Hit__c&quot;).ToString+&quot; (Report Hit: &quot;+item(&quot;Name&quot;).ToString+&quot;) appears to be blank: &quot;+item(&quot;Date_of_Report_hit__c&quot;).ToString]" />
+                              <Assign DisplayName="Assign out_TotalReportHitsLifetime" sap:VirtualizedContainerService.HintSize="334,60" sap2010:WorkflowViewState.IdRef="Assign_6">
+                                <Assign.To>
+                                  <OutArgument x:TypeArguments="x:Int32">[out_TotalReportHitsLifetime]</OutArgument>
+                                </Assign.To>
+                                <Assign.Value>
+                                  <InArgument x:TypeArguments="x:Int32">[out_TotalReportHitsLifetime+1]</InArgument>
+                                </Assign.Value>
+                              </Assign>
+                            </Sequence>
+                          </If.Then>
+                          <If.Else>
+                            <ui:MultipleAssign sap2010:Annotation.AnnotationText="Date will be in the format &quot;yyyy-MM-dd&quot;. &#xA;&#xA;1) Split the String (by Year, Month and Date) &#xA;2) Concatenate into format &quot;MM/dd/yyyy&quot;&#xA;3) Count the Number of Report Hits from Last 7/30/365 Days as well as Lifetime" DisplayName="Multiple Assign - Date Of report Hit Reformat" sap:VirtualizedContainerService.HintSize="334,324" sap2010:WorkflowViewState.IdRef="MultipleAssign_7">
+                              <ui:MultipleAssign.AssignOperations>
+                                <scg:List x:TypeArguments="ui:AssignOperation" Capacity="8">
+                                  <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_28">
+                                    <ui:AssignOperation.To>
+                                      <OutArgument x:TypeArguments="x:String">[strDateOfReportHit]</OutArgument>
+                                    </ui:AssignOperation.To>
+                                    <ui:AssignOperation.Value>
+                                      <InArgument x:TypeArguments="x:String">[Split(item("Date_of_Report_hit__c").ToString,"-")(1)+"/"+Split(item("Date_of_Report_hit__c").ToString,"-")(2)+"/"+Split(item("Date_of_Report_hit__c").ToString,"-")(0)]</InArgument>
+                                    </ui:AssignOperation.Value>
+                                  </ui:AssignOperation>
+                                  <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_29">
+                                    <ui:AssignOperation.To>
+                                      <OutArgument x:TypeArguments="x:Int32">[out_TotalReportHits7Days]</OutArgument>
+                                    </ui:AssignOperation.To>
+                                    <ui:AssignOperation.Value>
+                                      <InArgument x:TypeArguments="x:Int32">[If(Convert.ToDateTime(strDateOfReportHit) &gt;= Convert.ToDateTime(Datetime.now.addDays(-7).tostring("MM/dd/yyyy")), out_TotalReportHits7Days+1, out_TotalReportHits7Days)]</InArgument>
+                                    </ui:AssignOperation.Value>
+                                  </ui:AssignOperation>
+                                  <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_30">
+                                    <ui:AssignOperation.To>
+                                      <OutArgument x:TypeArguments="x:Int32">[out_TotalReportHits30Days]</OutArgument>
+                                    </ui:AssignOperation.To>
+                                    <ui:AssignOperation.Value>
+                                      <InArgument x:TypeArguments="x:Int32">[If(Convert.ToDateTime(strDateOfReportHit) &gt;= Convert.ToDateTime(Datetime.now.addDays(-30).tostring("MM/dd/yyyy")), out_TotalReportHits30Days+1, out_TotalReportHits30Days)]</InArgument>
+                                    </ui:AssignOperation.Value>
+                                  </ui:AssignOperation>
+                                  <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_31">
+                                    <ui:AssignOperation.To>
+                                      <OutArgument x:TypeArguments="x:Int32">[out_TotalReportHits365Days]</OutArgument>
+                                    </ui:AssignOperation.To>
+                                    <ui:AssignOperation.Value>
+                                      <InArgument x:TypeArguments="x:Int32">[If(Convert.ToDateTime(strDateOfReportHit) &gt;= Convert.ToDateTime(Datetime.now.addDays(-365).tostring("MM/dd/yyyy")), out_TotalReportHits365Days+1, out_TotalReportHits365Days)]</InArgument>
+                                    </ui:AssignOperation.Value>
+                                  </ui:AssignOperation>
+                                  <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_32">
+                                    <ui:AssignOperation.To>
+                                      <OutArgument x:TypeArguments="x:Int32">[out_TotalReportHitsLifetime]</OutArgument>
+                                    </ui:AssignOperation.To>
+                                    <ui:AssignOperation.Value>
+                                      <InArgument x:TypeArguments="x:Int32">[out_TotalReportHitsLifetime+1]</InArgument>
+                                    </ui:AssignOperation.Value>
+                                  </ui:AssignOperation>
+                                </scg:List>
+                              </ui:MultipleAssign.AssignOperations>
+                              <sap:WorkflowViewStateService.ViewState>
+                                <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                                  <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+                                </scg:Dictionary>
+                              </sap:WorkflowViewStateService.ViewState>
+                            </ui:MultipleAssign>
+                          </If.Else>
+                        </If>
+                        <ui:AddDataRow DataRow="{x:Null}" sap2010:Annotation.AnnotationText="Columns are as follows:&#xA;&#xA;ReportHitName&#xA;ReportHitType&#xA;ReportHitID&#xA;ReportHitDate&#xA;CreatedDate&#xA;OwnerID&#xA;CreatedByID&#xA;Action&#xA;BettingAccountID&#xA;Brand&#xA;CountryOfResidence&#xA;ExternalRecordID&#xA;PersonAccountID&#xA;Priority&#xA;TriggerHit&#xA;Stake&#xA;ValueTier&#xA;P&amp;L&#xA;SessionMinutes&#xA;BetCount&#xA;Withdrawal&#xA;DailyDeposit&#xA;Deposit&#xA;PercentageIncrease&#xA;Losses&#xA;RiskScore" ArrayRow="[{&#xA;If(String.IsNullOrEmpty(item(&quot;Name&quot;).ToString),&quot;&quot;, item(&quot;Name&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Report_Hit__c&quot;).ToString),&quot;&quot;, item(&quot;Report_Hit__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Id&quot;).ToString),&quot;&quot;, item(&quot;Id&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Date_of_Report_hit__c&quot;).ToString),&quot;&quot;, item(&quot;Date_of_Report_hit__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;CreatedDate&quot;).ToString),&quot;&quot;, item(&quot;CreatedDate&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;OwnerId&quot;).ToString),&quot;&quot;, item(&quot;OwnerId&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;CreatedById&quot;).ToString),&quot;&quot;, item(&quot;CreatedById&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Action__c&quot;).ToString),&quot;&quot;, item(&quot;Action__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Betting_Account__c&quot;).ToString),&quot;&quot;, item(&quot;Betting_Account__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Brand__c&quot;).ToString),&quot;&quot;, item(&quot;Brand__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Country_of_Residence__c&quot;).ToString),&quot;&quot;, item(&quot;Country_of_Residence__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;External_Record_ID__c&quot;).ToString),&quot;&quot;, item(&quot;External_Record_ID__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Person_Account__c&quot;).ToString),&quot;&quot;, item(&quot;Person_Account__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Priority__c&quot;).ToString),&quot;&quot;, item(&quot;Priority__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Trigger_Hit__c&quot;).ToString),&quot;&quot;, item(&quot;Trigger_Hit__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Stake__c&quot;).ToString),&quot;&quot;, item(&quot;Stake__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Value_Tier__c&quot;).ToString),&quot;&quot;, item(&quot;Value_Tier__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;p_l__c&quot;).ToString),&quot;&quot;, item(&quot;p_l__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Session_Minutes__c&quot;).ToString),&quot;&quot;, item(&quot;Session_Minutes__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Bet_Count__c&quot;).ToString),&quot;&quot;, item(&quot;Bet_Count__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Withdrawal__c&quot;).ToString),&quot;&quot;, item(&quot;Withdrawal__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Daily_Deposit__c&quot;).ToString),&quot;&quot;, item(&quot;Daily_Deposit__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Deposit__c&quot;).ToString),&quot;&quot;, item(&quot;Deposit__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Percentage_Increase__c&quot;).ToString),&quot;&quot;, item(&quot;Percentage_Increase__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Losses__c&quot;).ToString),&quot;&quot;, item(&quot;Losses__c&quot;).ToString),&#xA;If(String.IsNullOrEmpty(item(&quot;Risk_Score__c&quot;).ToString),&quot;&quot;, item(&quot;Risk_Score__c&quot;).ToString)&#xA;}]" DataTable="[dtReportHits]" DisplayName="Add Data Row - dtReportHits" sap:VirtualizedContainerService.HintSize="755,454" sap2010:WorkflowViewState.IdRef="AddDataRow_1">
+                          <sap:WorkflowViewStateService.ViewState>
+                            <scg:Dictionary x:TypeArguments="x:String, x:Object">
+                              <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+                            </scg:Dictionary>
+                          </sap:WorkflowViewStateService.ViewState>
+                        </ui:AddDataRow>
+                      </Sequence>
+                    </ActivityAction>
+                  </ui:ForEach.Body>
+                </ui:ForEach>
+              </Sequence>
+            </If.Else>
+          </If>
+        </Sequence>
+      </If.Else>
+    </If>
+    <ui:LogMessage DisplayName="Log Message - Report Hits Retrieved" sap:VirtualizedContainerService.HintSize="1583,91" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Info" Message="[if(String.IsNullOrEmpty(in_ReportHitType),&quot;&quot;,in_ReportHitType+&quot; &quot;)+&quot;Report Hits retrieved for &quot;+If(String.IsNullOrEmpty(in_AccountNK), &quot;Salesforce Account ID &quot;+in_AccountIDSalesforce, in_AccountNK+&quot; (Salesforce Account ID &quot;+in_AccountIDSalesforce+&quot;)&quot;)+&quot; - Status Code: &quot;+intStatusCode.ToString+&quot;, Total: &quot;+dtReportHits.Rows.Count.ToString]" />
+    <ui:MultipleAssign DisplayName="Multiple Assign  - Out Args (GetReportHitsByAccount)" sap:VirtualizedContainerService.HintSize="1583,98" sap2010:WorkflowViewState.IdRef="MultipleAssign_9">
+      <ui:MultipleAssign.AssignOperations>
+        <scg:List x:TypeArguments="ui:AssignOperation" Capacity="4">
+          <ui:AssignOperation sap2010:WorkflowViewState.IdRef="AssignOperation_37">
+            <ui:AssignOperation.To>
+              <OutArgument x:TypeArguments="sd:DataTable">[out_ReportHits]</OutArgument>
+            </ui:AssignOperation.To>
+            <ui:AssignOperation.Value>
+              <InArgument x:TypeArguments="sd:DataTable">[dtReportHits]</InArgument>
+            </ui:AssignOperation.Value>
+          </ui:AssignOperation>
+        </scg:List>
+      </ui:MultipleAssign.AssignOperations>
+    </ui:MultipleAssign>
+  </Sequence>
+</Activity>
